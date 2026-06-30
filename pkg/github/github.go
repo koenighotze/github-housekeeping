@@ -33,6 +33,7 @@ type CheckRun struct {
 type Client interface {
 	ListDependabotPRs(ctx context.Context, owner, repo string) ([]PullRequest, error)
 	GetCheckRuns(ctx context.Context, owner, repo, sha string) ([]CheckRun, error)
+	ApprovePR(ctx context.Context, owner, repo string, number int) error
 	MergePR(ctx context.Context, owner, repo string, number int) error
 	GetMainSHA(ctx context.Context, owner, repo string) (string, error)
 	PostComment(ctx context.Context, owner, repo string, number int, body string) error
@@ -120,6 +121,22 @@ func (c *restClient) GetCheckRuns(ctx context.Context, owner, repo, sha string) 
 		return nil, err
 	}
 	return result.CheckRuns, nil
+}
+
+func (c *restClient) ApprovePR(ctx context.Context, owner, repo string, number int) error {
+	payload, _ := json.Marshal(map[string]string{"event": "APPROVE"})
+	resp, err := c.do(ctx, http.MethodPost,
+		fmt.Sprintf("/repos/%s/%s/pulls/%d/reviews", owner, repo, number),
+		strings.NewReader(string(payload)))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("github: approve PR %s/%s#%d: status %d", owner, repo, number, resp.StatusCode)
+	}
+	return nil
 }
 
 func (c *restClient) MergePR(ctx context.Context, owner, repo string, number int) error {

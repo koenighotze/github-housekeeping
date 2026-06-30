@@ -23,6 +23,10 @@ func Merge(ctx context.Context, client github.Client, repo config.Repository, pr
 		return err
 	}
 
+	if err := client.ApprovePR(ctx, repo.Owner, repo.Repo, pr.Number); err != nil {
+		return fmt.Errorf("approving PR #%d: %w", pr.Number, err)
+	}
+
 	if err := client.MergePR(ctx, repo.Owner, repo.Repo, pr.Number); err != nil {
 		return fmt.Errorf("merging PR #%d: %w", pr.Number, err)
 	}

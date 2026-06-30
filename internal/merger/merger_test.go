@@ -16,6 +16,8 @@ import (
 type mockGithubClient struct {
 	checkRunsPerSHA map[string][]github.CheckRun
 	mainSHA         string
+	approveCalled   bool
+	approveErr      error
 	mergeCalled     bool
 	mergeErr        error
 	postCommentBody string
@@ -28,6 +30,11 @@ func (m *mockGithubClient) ListDependabotPRs(_ context.Context, _, _ string) ([]
 
 func (m *mockGithubClient) GetCheckRuns(_ context.Context, _, _, sha string) ([]github.CheckRun, error) {
 	return m.checkRunsPerSHA[sha], nil
+}
+
+func (m *mockGithubClient) ApprovePR(_ context.Context, _, _ string, _ int) error {
+	m.approveCalled = true
+	return m.approveErr
 }
 
 func (m *mockGithubClient) MergePR(_ context.Context, _, _ string, _ int) error {
@@ -77,7 +84,22 @@ func TestMerge(t *testing.T) {
 		err := Merge(context.Background(), client, config.Repository{Owner: "a", Repo: "b"}, testPR(), testPolicy())
 
 		require.NoError(t, err)
+		assert.True(t, client.approveCalled, "should approve PR before merging")
 		assert.True(t, client.mergeCalled)
+	})
+
+	t.Run("should not merge when approve fails", func(t *testing.T) {
+		client := &mockGithubClient{
+			checkRunsPerSHA: map[string][]github.CheckRun{
+				"prsha": {{Name: "ci", Status: "completed", Conclusion: "success"}},
+			},
+			approveErr: errors.New("approval failed"),
+		}
+
+		err := Merge(context.Background(), client, config.Repository{Owner: "a", Repo: "b"}, testPR(), testPolicy())
+
+		assert.ErrorContains(t, err, "approval failed")
+		assert.False(t, client.mergeCalled)
 	})
 
 	t.Run("should skip and post comment when PR CI is not green", func(t *testing.T) {
