@@ -81,7 +81,7 @@ func (c *restClient) ListDependabotPRs(ctx context.Context, owner, repo string) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("github: list PRs %s/%s: status %d", owner, repo, resp.StatusCode)
@@ -107,7 +107,7 @@ func (c *restClient) GetCheckRuns(ctx context.Context, owner, repo, sha string) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("github: get check runs %s/%s@%s: status %d", owner, repo, sha, resp.StatusCode)
@@ -129,7 +129,7 @@ func (c *restClient) MergePR(ctx context.Context, owner, repo string, number int
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("github: merge PR %s/%s#%d: status %d", owner, repo, number, resp.StatusCode)
@@ -143,7 +143,7 @@ func (c *restClient) GetMainSHA(ctx context.Context, owner, repo string) (string
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("github: get HEAD %s/%s: status %d", owner, repo, resp.StatusCode)
@@ -166,7 +166,7 @@ func (c *restClient) PostComment(ctx context.Context, owner, repo string, number
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("github: post comment %s/%s#%d: status %d", owner, repo, number, resp.StatusCode)
@@ -180,7 +180,7 @@ func (c *restClient) CommentExists(ctx context.Context, owner, repo string, numb
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("github: list comments %s/%s#%d: status %d", owner, repo, number, resp.StatusCode)
