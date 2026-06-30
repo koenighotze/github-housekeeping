@@ -16,6 +16,8 @@ repositories:
     repo: github-housekeeping
   - owner: koenighotze
     repo: github-distribute-secrets
+  - owner: koenighotze
+    repo: pdfdebugger
 
 policy:
   merge:
