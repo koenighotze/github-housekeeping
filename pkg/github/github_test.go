@@ -31,7 +31,7 @@ func TestListDependabotPRs(t *testing.T) {
 				}{Login: "octocat"}},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(prs)
+			assert.NoError(t, json.NewEncoder(w).Encode(prs))
 		})
 
 		client := newTestClient(t, mux)
@@ -65,7 +65,7 @@ func TestGetCheckRuns(t *testing.T) {
 				},
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(result)
+			assert.NoError(t, json.NewEncoder(w).Encode(result))
 		})
 
 		client := newTestClient(t, mux)
@@ -83,7 +83,8 @@ func TestMergePR(t *testing.T) {
 		mux.HandleFunc("/repos/acme/frontend/pulls/42/merge", func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodPut, r.Method)
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"merged":true}`))
+			_, werr := w.Write([]byte(`{"merged":true}`))
+			assert.NoError(t, werr)
 		})
 
 		client := newTestClient(t, mux)
@@ -110,7 +111,7 @@ func TestGetMainSHA(t *testing.T) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/repos/acme/frontend/commits/HEAD", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"sha": "deadbeef"})
+			assert.NoError(t, json.NewEncoder(w).Encode(map[string]string{"sha": "deadbeef"}))
 		})
 
 		client := newTestClient(t, mux)
@@ -127,7 +128,8 @@ func TestPostComment(t *testing.T) {
 		mux.HandleFunc("/repos/acme/frontend/issues/7/comments", func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodPost, r.Method)
 			w.WriteHeader(http.StatusCreated)
-			w.Write([]byte(`{"id":1}`))
+			_, werr := w.Write([]byte(`{"id":1}`))
+			assert.NoError(t, werr)
 		})
 
 		client := newTestClient(t, mux)
@@ -143,7 +145,7 @@ func TestCommentExists(t *testing.T) {
 		mux.HandleFunc("/repos/acme/frontend/issues/7/comments", func(w http.ResponseWriter, r *http.Request) {
 			comments := []map[string]string{{"body": "<!-- github-housekeeping -->\nSkipped."}}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(comments)
+			assert.NoError(t, json.NewEncoder(w).Encode(comments))
 		})
 
 		client := newTestClient(t, mux)
@@ -157,7 +159,8 @@ func TestCommentExists(t *testing.T) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/repos/acme/frontend/issues/7/comments", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[]`))
+			_, werr := w.Write([]byte(`[]`))
+			assert.NoError(t, werr)
 		})
 
 		client := newTestClient(t, mux)
