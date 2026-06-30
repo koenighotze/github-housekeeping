@@ -1,15 +1,35 @@
+# github-housekeeping configuration
+# Copy to config.yaml and adjust for your setup.
+
 github:
+  # 1Password secret reference to a GitHub Personal Access Token.
+  # The token needs: repo (read + write), pull_requests (write), checks (read).
+  # Create the item in 1Password, then reference it here as:
+  #   op://<vault>/<item>/<field>
   token_ref: "op://Personal/GitHub Housekeeping/token"
 
 repositories:
-  - owner: acme
-    repo: frontend
-  - owner: acme
-    repo: backend
+  # List every repository you want housekeeping to manage.
+  # owner: GitHub user or organisation name
+  # repo:  repository name
+  - owner: koenighotze
+    repo: github-housekeeping
+  - owner: koenighotze
+    repo: github-distribute-secrets
 
 policy:
   merge:
-    allow: [patch, minor]
+    # Which semver bump kinds are safe to auto-merge.
+    # Allowed values: patch, minor
+    # Major bumps are ALWAYS held for human review regardless of this list.
+    allow:
+      - patch
+      - minor
+
   ci_poll:
-    timeout: 10m
+    # How long to wait for main branch CI to go green after a merge
+    # before giving up and flagging the repo as failed.
+    timeout: 15m
+
+    # How often to check CI status while polling.
     interval: 30s
