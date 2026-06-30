@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -14,8 +15,13 @@ import (
 	"koenighotze.de/github-housekeeping/pkg/onepassword"
 )
 
+var errHeldOrFailed = errors.New("run completed: some PRs were held or failed")
+
 func main() {
 	if err := rootCmd().Execute(); err != nil {
+		if !errors.Is(err, errHeldOrFailed) {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		os.Exit(1)
 	}
 }
@@ -25,8 +31,10 @@ func rootCmd() *cobra.Command {
 	var dryRun bool
 
 	cmd := &cobra.Command{
-		Use:   "housekeeping",
-		Short: "Merge safe Dependabot PRs and keep repositories healthy",
+		Use:           "housekeeping",
+		Short:         "Merge safe Dependabot PRs and keep repositories healthy",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return run(cmd.Context(), cfgPath, dryRun)
 		},
@@ -64,6 +72,8 @@ func run(ctx context.Context, cfgPath string, dryRun bool) error {
 	}
 
 	rep.PrintSummary()
-	os.Exit(rep.ExitCode())
+	if rep.ExitCode() != 0 {
+		return errHeldOrFailed
+	}
 	return nil
 }

@@ -73,6 +73,19 @@ func greenChecks() []github.CheckRun {
 	return []github.CheckRun{{Name: "ci", Status: "completed", Conclusion: "success"}}
 }
 
+func patchOnlyConfig(repos ...config.Repository) *config.Config {
+	return &config.Config{
+		Repositories: repos,
+		Policy: config.Policy{
+			Merge: config.MergePolicy{Allow: []string{"patch"}},
+			CIPoll: config.CIPollPolicy{
+				Timeout:  100 * time.Millisecond,
+				Interval: 10 * time.Millisecond,
+			},
+		},
+	}
+}
+
 func TestRun(t *testing.T) {
 	t.Run("should merge a valid patch PR", func(t *testing.T) {
 		client := &mockClient{
@@ -115,6 +128,40 @@ func TestRun(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Empty(t, client.mergedPRs)
+		assert.Equal(t, 1, r.ExitCode())
+	})
+
+	t.Run("should hold and post sentinel comment on unrecognised bump pattern", func(t *testing.T) {
+		client := &mockClient{
+			prs: map[string][]github.PullRequest{
+				"frontend": {prWithSHA(3, "Update all dependencies", "sha3")},
+			},
+		}
+		var buf bytes.Buffer
+		r := reporter.New(&buf)
+		cfg := testConfig(config.Repository{Owner: "acme", Repo: "frontend"})
+
+		require.NoError(t, Run(context.Background(), cfg, client, r))
+		assert.Empty(t, client.mergedPRs)
+		assert.Len(t, client.comments, 1, "should post a sentinel comment")
+		assert.Contains(t, client.comments[0], commentSentinel)
+		assert.Equal(t, 1, r.ExitCode())
+	})
+
+	t.Run("should hold minor bump when only patch is in allow-list", func(t *testing.T) {
+		client := &mockClient{
+			prs: map[string][]github.PullRequest{
+				"frontend": {prWithSHA(4, "Bump lodash from 4.17.20 to 4.18.0", "sha4")},
+			},
+			checkRunsPerSHA: map[string][]github.CheckRun{"sha4": greenChecks()},
+		}
+		var buf bytes.Buffer
+		r := reporter.New(&buf)
+		cfg := patchOnlyConfig(config.Repository{Owner: "acme", Repo: "frontend"})
+
+		require.NoError(t, Run(context.Background(), cfg, client, r))
+		assert.Empty(t, client.mergedPRs)
+		assert.Len(t, client.comments, 1, "should post a sentinel comment")
 		assert.Equal(t, 1, r.ExitCode())
 	})
 

@@ -45,6 +45,7 @@ func processRepo(ctx context.Context, policy config.Policy, client github.Client
 func processPR(ctx context.Context, policy config.Policy, client github.Client, repo config.Repository, pr github.PullRequest, rep *reporter.Reporter) error {
 	bump, err := semver.ClassifyBump(pr.Title)
 	if err != nil {
+		postHeldComment(ctx, client, repo, pr, "unrecognised version bump pattern")
 		rep.RecordHeld(repo.Owner, repo.Repo, pr.Head.Ref, "unrecognised version bump pattern")
 		return nil
 	}
@@ -52,6 +53,12 @@ func processPR(ctx context.Context, policy config.Policy, client github.Client, 
 	if bump == semver.Major {
 		postHeldComment(ctx, client, repo, pr, "major version bump requires human review")
 		rep.RecordHeld(repo.Owner, repo.Repo, pr.Head.Ref, "major")
+		return nil
+	}
+
+	if !isBumpAllowed(bump, policy) {
+		postHeldComment(ctx, client, repo, pr, fmt.Sprintf("%s version bump not in policy allow-list", bump))
+		rep.RecordHeld(repo.Owner, repo.Repo, pr.Head.Ref, bump.String()+" not in allow-list")
 		return nil
 	}
 
@@ -70,6 +77,16 @@ func processPR(ctx context.Context, policy config.Policy, client github.Client, 
 
 	rep.RecordMerged(repo.Owner, repo.Repo, pr.Head.Ref, bump.String())
 	return nil
+}
+
+func isBumpAllowed(bump semver.BumpKind, policy config.Policy) bool {
+	bumpStr := bump.String()
+	for _, allowed := range policy.Merge.Allow {
+		if allowed == bumpStr {
+			return true
+		}
+	}
+	return false
 }
 
 func postHeldComment(ctx context.Context, client github.Client, repo config.Repository, pr github.PullRequest, reason string) {

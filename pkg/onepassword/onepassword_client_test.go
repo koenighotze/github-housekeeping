@@ -127,6 +127,6 @@ func TestGetSecretWithCache(t *testing.T) {
 
 		_, err := c.GetSecret(testSecretPath)
 
-		assert.ErrorIs(t, expectedError, err)
+		assert.ErrorIs(t, err, expectedError)
 	})
 }
