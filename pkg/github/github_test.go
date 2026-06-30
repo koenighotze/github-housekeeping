@@ -77,6 +77,38 @@ func TestGetCheckRuns(t *testing.T) {
 	})
 }
 
+func TestApprovePR(t *testing.T) {
+	t.Run("should approve a PR successfully", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/repos/acme/frontend/pulls/42/reviews", func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			var body map[string]string
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&body))
+			assert.Equal(t, "APPROVE", body["event"])
+			w.WriteHeader(http.StatusOK)
+			_, werr := w.Write([]byte(`{"id":1}`))
+			assert.NoError(t, werr)
+		})
+
+		client := newTestClient(t, mux)
+		err := client.ApprovePR(context.Background(), "acme", "frontend", 42)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("should return error on approve failure", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/repos/acme/frontend/pulls/42/reviews", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+		})
+
+		client := newTestClient(t, mux)
+		err := client.ApprovePR(context.Background(), "acme", "frontend", 42)
+
+		assert.Error(t, err)
+	})
+}
+
 func TestMergePR(t *testing.T) {
 	t.Run("should merge a PR successfully", func(t *testing.T) {
 		mux := http.NewServeMux()

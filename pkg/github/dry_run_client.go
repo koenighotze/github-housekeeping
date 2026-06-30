@@ -22,6 +22,11 @@ func (d *dryRunClient) GetCheckRuns(ctx context.Context, owner, repo, sha string
 	return d.real.GetCheckRuns(ctx, owner, repo, sha)
 }
 
+func (d *dryRunClient) ApprovePR(_ context.Context, owner, repo string, number int) error {
+	fmt.Fprintf(os.Stderr, "[dry-run] would approve %s/%s#%d\n", owner, repo, number)
+	return nil
+}
+
 func (d *dryRunClient) MergePR(_ context.Context, owner, repo string, number int) error {
 	fmt.Fprintf(os.Stderr, "[dry-run] would merge %s/%s#%d\n", owner, repo, number)
 	return nil

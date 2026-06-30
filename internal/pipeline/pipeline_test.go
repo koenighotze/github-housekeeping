@@ -31,6 +31,10 @@ func (m *mockClient) GetCheckRuns(_ context.Context, _, _, sha string) ([]github
 	return m.checkRunsPerSHA[sha], nil
 }
 
+func (m *mockClient) ApprovePR(_ context.Context, _, _ string, _ int) error {
+	return nil
+}
+
 func (m *mockClient) MergePR(_ context.Context, _, _ string, number int) error {
 	m.mergedPRs = append(m.mergedPRs, number)
 	return nil
