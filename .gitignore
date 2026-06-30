@@ -1,2 +1,23 @@
-coverage.out
+# Binary
 github-housekeeping
+
+# IDE files
+.idea/
+.vscode/
+
+# Test files
+TestResults.json
+
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Coverage
+coverage.out

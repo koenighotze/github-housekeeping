@@ -1,0 +1,15 @@
+github:
+  token_ref: "op://Personal/GitHub Housekeeping/token"
+
+repositories:
+  - owner: acme
+    repo: frontend
+  - owner: acme
+    repo: backend
+
+policy:
+  merge:
+    allow: [patch, minor]
+  ci_poll:
+    timeout: 10m
+    interval: 30s
